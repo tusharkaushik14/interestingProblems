@@ -1,6 +1,7 @@
 # Import the data and create the customer-by-time-matrix
-# Get ready to model
 
+#setwd
+setwd("~/Git/interestingProblems/churn-clv")
 ##Install packages
 toInstallCandidates <- c("ggplot2", "reshape2", "plyr", "lubridate", "devtools", "gsl", "data.table", "vcd", "gplots", "ggdendro")
 
@@ -28,7 +29,7 @@ if (local){
 }
 library(BTYD)
 
-cust_merch <-0
+cust_merch <-1
 
 if(cust_merch){
   elogFile <- "TxData.csv"
