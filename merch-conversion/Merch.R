@@ -14,6 +14,7 @@ merch$num_txns <- as.double(merch$num_txns)
 merch$rcvr_acct_cre_dt <- as.Date(merch$rcvr_acct_cre_dt, "%m/%d/%Y")
 summary(merch)
 
+#Display the lines with NAs in starts and dones and remove them
 merch[is.na(starts),][,.(rcvr_id,starts,dones)]
 merch[is.na(dones),][,.(rcvr_id,starts,dones)]
 merch<-merch[!is.na(starts)]
@@ -185,10 +186,88 @@ plsImp <- varImp(plsTune, scale = FALSE)
 
 plot(plsImp, top = 10, scales = list(y = list(cex = .95)))
 
+
+# Neuralnets
+nnetGrid <- expand.grid(decay = c(0, 0.01, .1), 
+                        size = c(1, 3, 5, 7, 9, 11, 13), 
+                        bag = FALSE)
+
+set.seed(100)
+nnetTune <- train(x = trainingData, y = merch_train$dropoutRate,
+                  method = "avNNet",
+                  tuneGrid = nnetGrid,
+                  trControl = ctrl,
+                  preProc = c("center", "scale"),
+                  linout = TRUE,
+                  trace = FALSE,
+                  MaxNWts = 13 * (ncol(trainingData) + 1) + 13 + 1,
+                  maxit = 1000,
+                  allowParallel = FALSE)
+nnetTune
+plot(nnetTune)
+testResults$NNet <- predict(nnetTune, testData))
+
+
+#Multivariate Adaptive Regression Splines
+set.seed(100)
+marsTune <- train(x = trainingData, y = merch_train$dropoutRate,
+                  method = "earth",
+                  tuneGrid = expand.grid(degree = 1, nprune = 2:38),
+                  trControl = ctrl)
+marsTune
+plot(marsTune)
+testResults$MARS <- predict(marsTune, testData)
+marsImp <- varImp(marsTune, scale = FALSE)
+plot(marsImp, top = 10)
+
+#Support Vector Machines
+set.seed(100)
+svmRTune <- train(x = trainingData, y = merch_train$dropoutRate,
+                  method = "svmRadial",
+                  preProc = c("center", "scale"),
+                  tuneLength = 14,
+                  trControl = ctrl)
+svmRTune
+plot(svmRTune, scales = list(x = list(log = 2)))                 
+testResults$SVMr <- predict(svmRTune, testData)
+svmGrid <- expand.grid(degree = 1:2, 
+                       scale = c(0.01, 0.005, 0.001), 
+                       C = 2^(-2:5))
+
+set.seed(100)
+svmPTune <- train(x = trainingData, y = merch_train$dropoutRate,
+                  method = "svmPoly",
+                  preProc = c("center", "scale"),
+                  tuneGrid = svmGrid,
+                  trControl = ctrl)
+svmPTune
+plot(svmPTune, 
+     scales = list(x = list(log = 2), 
+                   between = list(x = .5, y = 1)))                 
+
+testResults$SVMp <- predict(svmPTune, testData)
+
+# K-Nearest Neighbors
+set.seed(100)
+knnTune <- train(x = trainingData, y = merch_train$dropoutRate,
+                 method = "knn",
+                 preProc = c("center", "scale"),
+                 tuneGrid = data.frame(k = 1:20),
+                 trControl = ctrl)
+
+knnTune
+plot(knnTune)
+testResults$Knn <- predict(knnTune, testData)
+
+
+#Results
 head(testResults)
 qplot(obs, Linear_Regression, data = testResults)
 qplot(obs, PLS, data = testResults)
 qplot(obs, PCR, data = testResults)
-
-
+#qplot(obs, NNet, data = testResults)
+#qplot(obs, MARS, data = testResults)
+qplot(obs, SVMr, data = testResults)
+qplot(obs, SVMp, data = testResults)
+#qplot(obs, Knn, data = testResults)
 

@@ -1,4 +1,4 @@
-setwd("~/Merch_Conversion")
+setwd("~/Git/interestingProblems/merch-conversion")
 getwd()
 version
 
